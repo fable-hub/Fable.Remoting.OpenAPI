@@ -33,7 +33,7 @@ Instructions for future AI coding agents working in this repository.
   - Non-unit input endpoints map to POST.
   - Remoting request body shape is JSON array.
 - Route-builder integration must remain first-class:
-  - OpenAPI.withDocs should follow active remoting route builder.
+  - OpenApi.withDocs should follow active remoting route builder.
   - Default docs routes derive from route builder and API type name unless explicitly overridden.
 
 ## Architecture Boundaries

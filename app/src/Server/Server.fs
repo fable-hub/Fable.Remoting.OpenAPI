@@ -100,30 +100,30 @@ let remotingApi =
             }
         ]
         // getTodos
-        |> OpenAPI.withEndpointDocsFor<ITodosApi, unit -> Async<Todo list>> <@ fun api -> api.getTodos @> {
+        |> OpenApi.withEndpointDocsFor<ITodosApi, unit -> Async<Todo list>> <@ fun api -> api.getTodos @> {
             OpenApiDefaults.endpointDocumentation with
                 Summary = Some "List all todos"
                 Description = Some "Returns the current todo collection in storage order."
                 Tags = [ "Todos" ]
         }
         // addTodo
-        |> OpenAPI.withEndpointDocsFor<ITodosApi, Todo -> Async<Todo list>> <@ fun api -> api.addTodo @> {
+        |> OpenApi.withEndpointDocsFor<ITodosApi, Todo -> Async<Todo list>> <@ fun api -> api.addTodo @> {
             OpenApiDefaults.endpointDocumentation with
                 Summary = Some "Create a todo"
                 Description = Some "Adds a todo item when validation passes and returns the updated list."
                 Tags = [ "Todos" ]
         }
-        |> OpenAPI.withEndpointRequestExampleFor<ITodosApi, Todo, Todo list>
+        |> OpenApi.withEndpointRequestExampleFor<ITodosApi, Todo, Todo list>
             <@ fun api -> api.addTodo @>
             { Id = System.Guid.Empty; Description = "Write tests" }
         // deleteTodo
-        |> OpenAPI.withEndpointDocsFor<ITodosApi, System.Guid -> Async<Todo list>> <@ fun api -> api.deleteTodo @> {
+        |> OpenApi.withEndpointDocsFor<ITodosApi, System.Guid -> Async<Todo list>> <@ fun api -> api.deleteTodo @> {
             OpenApiDefaults.endpointDocumentation with
                 Summary = Some "Delete a todo"
                 Description = Some "Deletes a todo by id if it exists and returns the updated list."
                 Tags = [ "Todos" ]
         }
-        |> OpenAPI.withEndpointRequestExampleFor<ITodosApi, System.Guid, Todo list>
+        |> OpenApi.withEndpointRequestExampleFor<ITodosApi, System.Guid, Todo list>
             <@ fun api -> api.deleteTodo @>
             Storage.DEFAULT_TODO_GUIDE
         // updateTodo intentionally left without docs to demonstrate default behavior

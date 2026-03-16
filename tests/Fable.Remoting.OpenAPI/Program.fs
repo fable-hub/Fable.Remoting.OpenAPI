@@ -1,5 +1,6 @@
 module Fable.Remoting.OpenAPI.Tests
 
+open System.Text.Json
 open FluentAssertions
 open Fable.Remoting.OpenAPI
 open Fable.Remoting.Server
@@ -201,7 +202,7 @@ let ``Typed endpoint docs helper resolves record member names`` () =
 
     let doc =
         baseOptions
-        |> OpenAPI.withEndpointDocsFor<ComplexApi, SearchRequest -> Async<SearchResponse>> <@ fun api -> api.search @> {
+        |> OpenApi.withEndpointDocsFor<ComplexApi, SearchRequest -> Async<SearchResponse>> <@ fun api -> api.search @> {
             OpenApiDefaults.endpointDocumentation with
                 Summary = Some "Typed search summary"
         }
@@ -271,3 +272,118 @@ let ``OpenAPI withDocs keeps explicitly configured docs routes`` () =
     Assert.Equal("/custom/docs", doc.Routes.DocsPath)
     Assert.Equal("/custom/docs/openapi.json", doc.Routes.JsonPath)
     Assert.Equal("/custom/docs/openapi.yaml", doc.Routes.YamlPath)
+
+[<Fact>]
+let ``Named request examples are emitted as OpenAPI examples object`` () =
+    let archivedRequestExample = {
+        Query = "Archived"
+        IncludeArchived = Some true
+        Tags = [ "legacy" ]
+        Metadata = Map.ofList [ ("segment", Some "archive") ]
+    }
+
+    let doc =
+        createBaseOptions ()
+        |> OpenApi.withEndpointRequestNamedExampleFor<ComplexApi, SearchRequest, SearchResponse>
+            <@ fun api -> api.search @>
+            {
+                Name = "primary"
+                Summary = Some "Primary search payload"
+                Description = Some "Preferred search request"
+                ExternalValue = None
+            }
+            searchRequestExample
+        |> OpenApi.withEndpointRequestNamedExampleFor<ComplexApi, SearchRequest, SearchResponse>
+            <@ fun api -> api.search @>
+            {
+                Name = "archived"
+                Summary = Some "Archived payload"
+                Description = None
+                ExternalValue = Some "https://example.test/examples/search-archived.json"
+            }
+            archivedRequestExample
+        |> OpenApi.generate<ComplexApi>
+
+    use parsed = JsonDocument.Parse(doc.Json)
+    let mediaType =
+        parsed.RootElement
+            .GetProperty("paths")
+            .GetProperty("/api/search")
+            .GetProperty("post")
+            .GetProperty("requestBody")
+            .GetProperty("content")
+            .GetProperty("application/json")
+
+    (mediaType.TryGetProperty("examples") |> fst).Should().BeTrue() |> ignore
+    (mediaType.TryGetProperty("example") |> fst).Should().BeFalse() |> ignore
+
+    let examples = mediaType.GetProperty("examples")
+    let primary = examples.GetProperty("primary")
+    primary.GetProperty("summary").GetString().Should().Be("Primary search payload") |> ignore
+    primary.GetProperty("description").GetString().Should().Be("Preferred search request") |> ignore
+
+    doc.Json.Should().Contain("\"primary\"") |> ignore
+
+    let archived = examples.GetProperty("archived")
+    archived.GetProperty("externalValue").GetString().Should().Be("https://example.test/examples/search-archived.json")
+    |> ignore
+
+[<Fact>]
+let ``Named response examples are emitted for non-unit endpoints`` () =
+    let altResponseExample = {
+        Total = 2
+        Items = [
+            {
+                Name = "Tailspin Toys"
+                Address = {
+                    Street = "South"
+                    PostalCode = None
+                }
+            }
+        ]
+    }
+
+    let doc =
+        createBaseOptions ()
+        |> OpenApi.withEndpointResponseNamedExampleFor<ComplexApi, SearchRequest -> Async<SearchResponse>, SearchResponse>
+            <@ fun api -> api.search @>
+            {
+                Name = "success"
+                Summary = Some "Success payload"
+                Description = Some "Typical successful response"
+                ExternalValue = None
+            }
+            searchResponseExample
+        |> OpenApi.withEndpointResponseNamedExampleFor<ComplexApi, SearchRequest -> Async<SearchResponse>, SearchResponse>
+            <@ fun api -> api.search @>
+            {
+                Name = "alternate"
+                Summary = Some "Alternate payload"
+                Description = None
+                ExternalValue = Some "https://example.test/examples/search-response-alt.json"
+            }
+            altResponseExample
+        |> OpenApi.generate<ComplexApi>
+
+    use parsed = JsonDocument.Parse(doc.Json)
+    let mediaType =
+        parsed.RootElement
+            .GetProperty("paths")
+            .GetProperty("/api/search")
+            .GetProperty("post")
+            .GetProperty("responses")
+            .GetProperty("200")
+            .GetProperty("content")
+            .GetProperty("application/json")
+
+    (mediaType.TryGetProperty("examples") |> fst).Should().BeTrue() |> ignore
+    (mediaType.TryGetProperty("example") |> fst).Should().BeFalse() |> ignore
+
+    let examples = mediaType.GetProperty("examples")
+    let success = examples.GetProperty("success")
+    success.GetProperty("summary").GetString().Should().Be("Success payload") |> ignore
+    success.GetProperty("description").GetString().Should().Be("Typical successful response") |> ignore
+
+    let alternate = examples.GetProperty("alternate")
+    alternate.GetProperty("externalValue").GetString().Should().Be("https://example.test/examples/search-response-alt.json")
+    |> ignore

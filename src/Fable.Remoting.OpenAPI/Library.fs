@@ -39,12 +39,29 @@ type DocsContentBlock = {
     IsMarkdown: bool
 }
 
+type OpenApiExampleMetadata = {
+    Name: string
+    Summary: string option
+    Description: string option
+    ExternalValue: string option
+}
+
+type OpenApiExample = {
+    Name: string
+    Summary: string option
+    Description: string option
+    Value: obj option
+    ExternalValue: string option
+}
+
 type EndpointDocumentation = {
     Summary: string option
     Description: string option
     Tags: string list
     RequestExample: obj option
+    RequestExamples: OpenApiExample list
     ResponseExample: obj option
+    ResponseExamples: OpenApiExample list
     AdditionalResponses: Map<int, string>
 }
 
@@ -86,6 +103,14 @@ type private JsonValue =
     | JObject of (string * JsonValue) list
     | JArray of JsonValue list
 
+type private OpenApiExampleValue = {
+    Name: string
+    Summary: string option
+    Description: string option
+    Value: JsonValue option
+    ExternalValue: string option
+}
+
 type private OpenApiSchema =
     | Primitive of PrimitiveKind * string option * bool
     | Array of OpenApiSchema * bool
@@ -105,7 +130,8 @@ type private OpenApiOperation = {
     Tags: string list
     RequestSchema: OpenApiSchema option
     RequestExample: JsonValue option
-    Responses: (int * string * OpenApiSchema option * JsonValue option) list
+    RequestExamples: OpenApiExampleValue list
+    Responses: (int * string * OpenApiSchema option * JsonValue option * OpenApiExampleValue list) list
 }
 
 type private OpenApiDocumentModel = {
@@ -396,7 +422,9 @@ module private SchemaModel =
                         Description = None
                         Tags = []
                         RequestExample = None
+                        RequestExamples = []
                         ResponseExample = None
+                        ResponseExamples = []
                         AdditionalResponses = Map.empty
                     }
 
@@ -428,16 +456,28 @@ module private SchemaModel =
                         Some(schemaFor options state endpoint.ReturnType)
 
                 let responses =
+                    let responseExamples =
+                        endpointDocs.ResponseExamples
+                        |> List.map (fun example ->
+                            {
+                                Name = example.Name
+                                Summary = example.Summary
+                                Description = example.Description
+                                Value = example.Value |> Option.bind JsonValues.ofObj
+                                ExternalValue = example.ExternalValue
+                            })
+
                     let okResponse =
                         200,
                         "Successful response",
                         responseSchema,
-                        endpointDocs.ResponseExample |> Option.bind JsonValues.ofObj
+                        endpointDocs.ResponseExample |> Option.bind JsonValues.ofObj,
+                        responseExamples
 
                     let additional =
                         endpointDocs.AdditionalResponses
                         |> Map.toList
-                        |> List.map (fun (statusCode, description) -> statusCode, description, None, None)
+                        |> List.map (fun (statusCode, description) -> statusCode, description, None, None, [])
 
                     okResponse :: additional
 
@@ -454,6 +494,19 @@ module private SchemaModel =
                         endpointDocs.RequestExample
                         |> Option.bind JsonValues.ofObj
                         |> Option.map (JsonValues.ensureArrayPayload argCount)
+                    RequestExamples =
+                        endpointDocs.RequestExamples
+                        |> List.map (fun example ->
+                            {
+                                Name = example.Name
+                                Summary = example.Summary
+                                Description = example.Description
+                                Value =
+                                    example.Value
+                                    |> Option.bind JsonValues.ofObj
+                                    |> Option.map (JsonValues.ensureArrayPayload argCount)
+                                ExternalValue = example.ExternalValue
+                            })
                     Responses = responses
                 })
 
@@ -626,6 +679,32 @@ module private JsonRendering =
 
         loop schema
 
+    let private exampleToJson (example: OpenApiExampleValue) =
+        JObject(
+            [
+                match example.Summary with
+                | Some summary -> "summary", JString summary
+                | None -> ()
+
+                match example.Description with
+                | Some description -> "description", JString description
+                | None -> ()
+
+                match example.Value with
+                | Some value -> "value", value
+                | None -> ()
+
+                match example.ExternalValue with
+                | Some externalValue -> "externalValue", JString externalValue
+                | None -> ()
+            ]
+        )
+
+    let private examplesToJson (examples: OpenApiExampleValue list) =
+        examples
+        |> List.map (fun example -> example.Name, exampleToJson example)
+        |> JObject
+
     let private diagnosticsToJson diagnostics =
         diagnostics
         |> List.map (fun d ->
@@ -710,14 +789,17 @@ module private JsonRendering =
                     match op.RequestSchema with
                     | None -> []
                     | Some schema ->
-                        let mediaTypeFields =
-                            [ "schema", schemaToJson schema ]
-                            @
-                            [
-                                match op.RequestExample with
-                                | Some example -> "example", example
-                                | None -> ()
-                            ]
+                        let exampleFields =
+                            if not (List.isEmpty op.RequestExamples) then
+                                [ "examples", examplesToJson op.RequestExamples ]
+                            else
+                                [
+                                    match op.RequestExample with
+                                    | Some example -> "example", example
+                                    | None -> ()
+                                ]
+
+                        let mediaTypeFields = [ "schema", schemaToJson schema ] @ exampleFields
 
                         [
                             "requestBody",
@@ -729,20 +811,24 @@ module private JsonRendering =
 
                 let responsesField =
                     op.Responses
-                    |> List.sortBy (fun (statusCode, _, _, _) -> statusCode)
-                    |> List.map (fun (statusCode, description, schemaOpt, exampleOpt) ->
+                    |> List.sortBy (fun (statusCode, _, _, _, _) -> statusCode)
+                    |> List.map (fun (statusCode, description, schemaOpt, exampleOpt, examples) ->
                         let contentField =
                             match schemaOpt with
                             | None -> []
                             | Some schema ->
+                                let exampleFields =
+                                    if not (List.isEmpty examples) then
+                                        [ "examples", examplesToJson examples ]
+                                    else
+                                        [
+                                            match exampleOpt with
+                                            | Some example -> "example", example
+                                            | None -> ()
+                                        ]
+
                                 let mediaFields =
-                                    [ "schema", schemaToJson schema ]
-                                    @
-                                    [
-                                        match exampleOpt with
-                                        | Some example -> "example", example
-                                        | None -> ()
-                                    ]
+                                    [ "schema", schemaToJson schema ] @ exampleFields
 
                                 [ "content", JObject [ "application/json", JObject mediaFields ] ]
 
@@ -899,7 +985,9 @@ module private DocumentBuilding =
         Description = None
         Tags = []
         RequestExample = None
+        RequestExamples = []
         ResponseExample = None
+        ResponseExamples = []
         AdditionalResponses = Map.empty
     }
 
@@ -958,6 +1046,7 @@ module OpenApiDefaults =
             SchemaNameStrategy = (fun t -> t.Name)
         }
 
+[<RequireQualifiedAccessAttribute>]
 module OpenApi =
     let options : OpenApiOptions = OpenApiDefaults.options
 
@@ -1001,8 +1090,34 @@ module OpenApi =
             { existing with RequestExample = Some(box example) }
             options
 
-    let withEndpointResponseExampleFor<'Api, 'Output>
-        (endpointExpr: Expr<'Api -> Async<'Output>>)
+    let withEndpointRequestNamedExampleFor<'Api, 'Input, 'Output>
+        (endpointExpr: Expr<'Api -> ('Input -> Async<'Output>)>)
+        (metadata: OpenApiExampleMetadata)
+        (example: 'Input)
+        (options: OpenApiOptions)
+        =
+        let endpointName = EndpointExpressions.endpointName endpointExpr
+
+        let existing =
+            options.EndpointDocs
+            |> Map.tryFind endpointName
+            |> Option.defaultValue OpenApiDefaults.endpointDocumentation
+
+        let requestExample : OpenApiExample = {
+            Name = metadata.Name
+            Summary = metadata.Summary
+            Description = metadata.Description
+            Value = Some(box example)
+            ExternalValue = metadata.ExternalValue
+        }
+
+        withEndpointDocs
+            endpointName
+            { existing with RequestExamples = existing.RequestExamples @ [ requestExample ] }
+            options
+
+    let withEndpointResponseExampleFor<'Api, 'Endpoint, 'Output>
+        (endpointExpr: Expr<'Api -> 'Endpoint>)
         (example: 'Output)
         (options: OpenApiOptions)
         =
@@ -1016,6 +1131,32 @@ module OpenApi =
         withEndpointDocs
             endpointName
             { existing with ResponseExample = Some(box example) }
+            options
+
+    let withEndpointResponseNamedExampleFor<'Api, 'Endpoint, 'Output>
+        (endpointExpr: Expr<'Api -> 'Endpoint>)
+        (metadata: OpenApiExampleMetadata)
+        (example: 'Output)
+        (options: OpenApiOptions)
+        =
+        let endpointName = EndpointExpressions.endpointName endpointExpr
+
+        let existing =
+            options.EndpointDocs
+            |> Map.tryFind endpointName
+            |> Option.defaultValue OpenApiDefaults.endpointDocumentation
+
+        let responseExample : OpenApiExample = {
+            Name = metadata.Name
+            Summary = metadata.Summary
+            Description = metadata.Description
+            Value = Some(box example)
+            ExternalValue = metadata.ExternalValue
+        }
+
+        withEndpointDocs
+            endpointName
+            { existing with ResponseExamples = existing.ResponseExamples @ [ responseExample ] }
             options
 
     let withOperationIdStrategy strategy (options: OpenApiOptions) = { options with OperationIdStrategy = strategy }
@@ -1089,30 +1230,12 @@ module OpenApi =
         |> withRemotingRouteBuilder remotingOptions
         |> generate<'Api>
 
+[<RequireQualifiedAccessAttribute>]
 module OpenAPI =
+
     let withDocs<'Context, 'Api>
         (remotingOptions: RemotingOptions<'Context, 'Api>)
         (options: OpenApiOptions)
         =
         OpenApi.generateFromRemoting remotingOptions options
 
-    let withEndpointDocsFor<'Api, 'Endpoint>
-        (endpointExpr: Expr<'Api -> 'Endpoint>)
-        endpointDocs
-        (options: OpenApiOptions)
-        =
-        OpenApi.withEndpointDocsFor endpointExpr endpointDocs options
-
-    let withEndpointRequestExampleFor<'Api, 'Input, 'Output>
-        (endpointExpr: Expr<'Api -> ('Input -> Async<'Output>)>)
-        (example: 'Input)
-        (options: OpenApiOptions)
-        =
-        OpenApi.withEndpointRequestExampleFor endpointExpr example options
-
-    let withEndpointResponseExampleFor<'Api, 'Output>
-        (endpointExpr: Expr<'Api -> Async<'Output>>)
-        (example: 'Output)
-        (options: OpenApiOptions)
-        =
-        OpenApi.withEndpointResponseExampleFor endpointExpr example options

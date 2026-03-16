@@ -88,7 +88,7 @@ module Remoting =
           (options: Fable.Remoting.OpenAPI.OpenApiOptions)
             (remotingOptions: RemotingOptions<HttpContext, 'Api>)
             : HttpHandler =
-            let document = Fable.Remoting.OpenAPI.OpenAPI.withDocs remotingOptions options
+            let document = Fable.Remoting.OpenAPI.OpenApi.generateFromRemoting remotingOptions options
             let docsHandler = Fable.Remoting.OpenAPI.Giraffe.OpenApiGiraffe.httpHandler document
             let remotingHandler = remotingOptions |> Fable.Remoting.Giraffe.Remoting.buildHttpHandler
 

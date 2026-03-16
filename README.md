@@ -52,7 +52,7 @@ let webApp =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder (fun typeName methodName -> sprintf "/api/%s/%s" typeName methodName)
     |> Remoting.fromValue apiImplementation
-    |> Remoting.OpenAPI.withDocs docsOptions
+    |> OpenAPI.withDocs docsOptions
 ```
 
 By default, the docs routes follow the same remoting route base:
@@ -85,13 +85,88 @@ open Fable.Remoting.OpenAPI
 
 let docs =
     OpenApi.options
-    |> OpenAPI.withEndpointDocsFor<MyApi, CreateOrder -> Async<OrderId>>
+    |> OpenApi.withEndpointDocsFor<MyApi, CreateOrder -> Async<OrderId>>
         <@ fun api -> api.createOrder @>
         { OpenApiDefaults.endpointDocumentation with Summary = Some "Create order" }
-    |> OpenAPI.withEndpointRequestExampleFor<MyApi, CreateOrder, OrderId>
+    |> OpenApi.withEndpointRequestExampleFor<MyApi, CreateOrder, OrderId>
         <@ fun api -> api.createOrder @>
         { customerId = "c-1"; amount = 12.5m }
+    |> OpenApi.withEndpointRequestNamedExampleFor<MyApi, CreateOrder, OrderId>
+        <@ fun api -> api.createOrder @>
+        {
+            Name = "bulk"
+            Summary = Some "Bulk order example"
+            Description = Some "Example payload for batch processing"
+            ExternalValue = None
+        }
+        { customerId = "c-2"; amount = 42m }
+    |> OpenApi.withEndpointResponseNamedExampleFor<MyApi, CreateOrder -> Async<OrderId>, OrderId>
+        <@ fun api -> api.createOrder @>
+        {
+            Name = "created"
+            Summary = Some "Successful response"
+            Description = Some "Order id returned when creation succeeds"
+            ExternalValue = None
+        }
+        { value = "order-123" }
 ```
+
+Named example helpers emit OpenAPI `examples` objects (multiple examples with metadata like `summary` and `description`) in request and response media types.
+
+## Endpoint Example APIs
+
+The options pipeline exposes two styles of example helpers:
+
+- Single-example helpers (emit OpenAPI `example` when no named examples are configured)
+    - `OpenApi.withEndpointRequestExampleFor<'Api, 'Input, 'Output>`
+    - `OpenApi.withEndpointResponseExampleFor<'Api, 'Endpoint, 'Output>`
+- Named example helpers (emit OpenAPI `examples`)
+    - `OpenApi.withEndpointRequestNamedExampleFor<'Api, 'Input, 'Output>`
+    - `OpenApi.withEndpointResponseNamedExampleFor<'Api, 'Endpoint, 'Output>`
+
+### Response Helper Expression Type
+
+`withEndpointResponseExampleFor` and `withEndpointResponseNamedExampleFor` accept endpoint quotations typed as `Expr<'Api -> 'Endpoint>`, which means they work for both:
+
+- unit-input endpoints, for example: `unit -> Async<'Output>`
+- non-unit endpoints, for example: `'Input -> Async<'Output>`
+
+For non-unit endpoints, pass the function type as `'Endpoint` in the generic argument list:
+
+```fsharp
+|> OpenApi.withEndpointResponseNamedExampleFor<MyApi, CreateOrder -> Async<OrderId>, OrderId>
+        <@ fun api -> api.createOrder @>
+        {
+                Name = "created"
+                Summary = Some "Successful response"
+                Description = Some "Order id returned when creation succeeds"
+                ExternalValue = None
+        }
+        { value = "order-123" }
+```
+
+### Example Metadata Shape
+
+Named helpers use `OpenApiExampleMetadata`:
+
+```fsharp
+type OpenApiExampleMetadata = {
+        Name: string
+        Summary: string option
+        Description: string option
+        ExternalValue: string option
+}
+```
+
+This maps to OpenAPI example object fields (`summary`, `description`, `value`, `externalValue`) as described by Swagger/OpenAPI documentation.
+
+### Rendering Behavior
+
+- If named examples exist for a request or response media type, output uses `examples`.
+- If no named examples exist, the legacy single-example value is emitted as `example`.
+- For Fable.Remoting request bodies, request example values are normalized to array payload shape.
+
+This keeps existing single-example pipelines working while enabling richer multi-example docs.
 
 ## Development
 
