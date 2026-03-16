@@ -17,6 +17,19 @@ export default defineConfig({
             "/api/": {
                 target: proxyTarget,
                 changeOrigin: true,
+            },
+            // expose OpenAPI assets and docs from the backend during local development
+            "/openapi.json": {
+                target: proxyTarget,
+                changeOrigin: true,
+            },
+            "/openapi.yaml": {
+                target: proxyTarget,
+                changeOrigin: true,
+            },
+            "/docs": {
+                target: proxyTarget,
+                changeOrigin: true,
             }
         },
         watch: {

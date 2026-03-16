@@ -1,0 +1,293 @@
+﻿{
+  "components": {
+    "schemas": {
+      "Address": {
+        "properties": {
+          "PostalCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "Street": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "Street"
+        ],
+        "type": "object"
+      },
+      "Customer": {
+        "properties": {
+          "Address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "Name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "Name",
+          "Address"
+        ],
+        "type": "object"
+      },
+      "Outcome": {
+        "oneOf": [
+          {
+            "properties": {
+              "case": {
+                "enum": [
+                  "Accepted"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "case"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "case": {
+                "enum": [
+                  "Rejected"
+                ],
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "case",
+              "reason"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "SearchRequest": {
+        "properties": {
+          "IncludeArchived": {
+            "nullable": true,
+            "type": "boolean"
+          },
+          "Metadata": {
+            "additionalProperties": {
+              "nullable": true,
+              "type": "string"
+            },
+            "properties": {},
+            "type": "object"
+          },
+          "Query": {
+            "type": "string"
+          },
+          "Tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "Query",
+          "Tags",
+          "Metadata"
+        ],
+        "type": "object"
+      },
+      "SearchResponse": {
+        "properties": {
+          "Items": {
+            "items": {
+              "$ref": "#/components/schemas/Customer"
+            },
+            "type": "array"
+          },
+          "Total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "Total",
+          "Items"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "api@example.test",
+      "name": "API Team",
+      "url": "https://example.test/team"
+    },
+    "description": "Generated from a record-of-functions contract",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "title": "Contract API",
+    "version": "2026.03"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/api/enrich": {
+      "post": {
+        "operationId": "enrich",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "arg1": {
+                    "type": "string"
+                  },
+                  "arg2": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "arg1",
+                  "arg2"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Outcome"
+                    }
+                  ],
+                  "nullable": true
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/ping": {
+      "post": {
+        "operationId": "ping",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/search": {
+      "post": {
+        "description": "Finds customers by query and metadata filters.",
+        "operationId": "search",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "500": {
+            "description": "Server failure"
+          }
+        },
+        "summary": "Search customers",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/api/unsupported": {
+      "post": {
+        "operationId": "unsupported",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Unsupported function type 'Microsoft.FSharp.Core.FSharpFunc`2[[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "description": "Successful response"
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "production",
+      "url": "https://api.example.test"
+    },
+    {
+      "description": "local",
+      "url": "http://localhost:8080"
+    }
+  ],
+  "x-diagnostics": [
+    {
+      "message": "Function type 'Microsoft.FSharp.Core.FSharpFunc`2[[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]' is not supported by OpenAPI schemas.",
+      "severity": "warning"
+    }
+  ],
+  "x-docs-content": [
+    {
+      "content": "The API is generated from F# shared contracts.",
+      "isMarkdown": false,
+      "title": "Overview"
+    },
+    {
+      "content": "- deterministic output\n- endpoint metadata support",
+      "isMarkdown": true,
+      "title": "Notes"
+    }
+  ]
+}

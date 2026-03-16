@@ -1,0 +1,8 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "dotnet test": true,
+    "ForEach-Object": true,
+    "Set-Content": true,
+    "dotnet fsi": true
+  }
+}

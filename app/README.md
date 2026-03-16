@@ -20,6 +20,12 @@ dotnet run
 
 Then open `http://localhost:8080` in your browser.
 
+OpenAPI endpoints are also available in the sample server:
+
+- `http://localhost:8080/openapi.json`
+- `http://localhost:8080/openapi.yaml`
+- `http://localhost:8080/docs`
+
 The build project in root directory contains a couple of different build targets. You can specify them after `--` (target name is case-insensitive).
 
 To run concurrently server and client tests in watch mode (you can run this command in parallel to the previous one in new terminal):

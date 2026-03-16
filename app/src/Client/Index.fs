@@ -131,6 +131,15 @@ let view model dispatch =
                         ]
                     ]
 
+                    Html.a [
+                        prop.href "/docs"
+                        prop.target "_blank"
+                        prop.rel "noopener noreferrer"
+                        prop.className
+                            "absolute right-4 sm:right-12 top-4 sm:top-6 inline-flex items-center rounded bg-slate-900/80 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-slate-900"
+                        prop.text "API Docs"
+                    ]
+
 
                     Html.div [
                         prop.className "flex flex-col items-center justify-center h-full"

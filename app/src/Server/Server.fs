@@ -2,7 +2,9 @@ module Server
 
 open SAFE
 open Saturn
+open Giraffe
 open Shared
+open Fable.Remoting.OpenAPI
 
 module Storage =
     let todos =
@@ -12,25 +14,67 @@ module Storage =
             Todo.create "Ship it!!!"
         ]
 
-    let addTodo todo =
+    let addTodo (todo: Todo) =
         if Todo.isValid todo.Description then
             todos.Add todo
-            Ok()
+            Result.Ok()
         else
-            Error "Invalid todo"
+            Result.Error "Invalid todo"
 
 let todosApi ctx = {
     getTodos = fun () -> async { return Storage.todos |> List.ofSeq }
     addTodo =
-        fun todo -> async {
+        fun (todo: Todo) -> async {
             return
                 match Storage.addTodo todo with
-                | Ok() -> Storage.todos |> List.ofSeq
-                | Error e -> failwith e
+                | Result.Ok() -> Storage.todos |> List.ofSeq
+                | Result.Error e -> failwith e
         }
 }
 
-let webApp = Api.make todosApi
+let openApiDocument =
+    OpenApi.options
+    |> OpenApi.withTitle "SAFE Todos API"
+    |> OpenApi.withVersion "1.0.0"
+    |> OpenApi.withDescription "OpenAPI documentation generated directly from Shared.ITodosApi contract."
+    |> OpenApi.withServers [
+        {
+            Url = "http://localhost:8080"
+            Description = Some "Local development"
+        }
+    ]
+    |> OpenApi.withDocsContent [
+        {
+            Title = "Authentication"
+            Content = "This sample does not require auth in development mode."
+            IsMarkdown = false
+        }
+        {
+            Title = "Error handling"
+            Content = "Server may fail with 500 for invalid data paths in this playground."
+            IsMarkdown = false
+        }
+    ]
+    |> OpenApi.withEndpointDocs "getTodos" {
+        OpenApiDefaults.endpointDocumentation with
+            Summary = Some "List all todos"
+            Description = Some "Returns the current todo collection in storage order."
+            Tags = [ "Todos" ]
+    }
+    |> OpenApi.withEndpointDocs "addTodo" {
+        OpenApiDefaults.endpointDocumentation with
+            Summary = Some "Create a todo"
+            Description = Some "Adds a todo item when validation passes and returns the updated list."
+            Tags = [ "Todos" ]
+            RequestExample = Some(box ({ Id = System.Guid.Empty; Description = "Write tests" } : Todo))
+    }
+    |> OpenApi.generate<ITodosApi>
+
+let webApp =
+    choose [
+        OpenApiGiraffe.httpHandler openApiDocument
+        Api.make todosApi
+    ]
 
 let app = application {
     use_router webApp
