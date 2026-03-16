@@ -3,6 +3,7 @@
     "dotnet test": true,
     "ForEach-Object": true,
     "Set-Content": true,
-    "dotnet fsi": true
+    "dotnet fsi": true,
+    "dotnet build": true
   }
 }

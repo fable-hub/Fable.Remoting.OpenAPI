@@ -16,4 +16,6 @@ module Todo =
 type ITodosApi = {
     getTodos: unit -> Async<Todo list>
     addTodo: Todo -> Async<Todo list>
+    updateTodo: Todo -> Async<Todo list>
+    deleteTodo: Guid -> Async<Todo list>
 }

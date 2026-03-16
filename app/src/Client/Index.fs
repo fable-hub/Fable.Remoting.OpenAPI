@@ -132,7 +132,7 @@ let view model dispatch =
                     ]
 
                     Html.a [
-                        prop.href "/docs"
+                        prop.href "/api/ITodosApi/docs"
                         prop.target "_blank"
                         prop.rel "noopener noreferrer"
                         prop.className

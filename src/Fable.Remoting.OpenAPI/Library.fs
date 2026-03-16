@@ -3,11 +3,13 @@
 open System
 open System.Collections.Generic
 open System.Globalization
+open Microsoft.FSharp.Quotations
+open Microsoft.FSharp.Quotations.Patterns
 open System.Text
 open System.Text.Json
 open System.Threading.Tasks
+open Fable.Remoting.Server
 open FSharp.Reflection
-open Giraffe
 
 type OpenApiContact = {
     Name: string option
@@ -96,6 +98,7 @@ type private OpenApiSchema =
 type private OpenApiOperation = {
     Name: string
     Route: string
+    HttpMethod: string
     OperationId: string
     Summary: string option
     Description: string option
@@ -122,6 +125,7 @@ type OpenApiDocument = {
     Json: string
     Yaml: string
     Model: obj
+    DocsContent: DocsContentBlock list
     Diagnostics: OpenApiDiagnostic list
     Routes: OpenApiRoutes
 }
@@ -168,6 +172,15 @@ module private Utils =
         elif path.StartsWith("/") then path
         else "/" + path
 
+module private EndpointExpressions =
+    let endpointName<'Api, 'Endpoint> (expr: Expr<'Api -> 'Endpoint>) =
+        match expr with
+        | Lambda(_, PropertyGet(Some(Var _), propertyInfo, [])) -> propertyInfo.Name
+        | _ ->
+            invalidArg
+                "endpointExpr"
+                "Endpoint expression must be of the form <@ fun api -> api.someMember @>."
+
 module private JsonValues =
     let rec ofJsonElement (element: JsonElement) : JsonValue =
         match element.ValueKind with
@@ -193,6 +206,14 @@ module private JsonValues =
             let json = JsonSerializer.Serialize(value)
             use document = JsonDocument.Parse(json)
             Some(ofJsonElement document.RootElement)
+
+    let ensureArrayPayload (argCount: int) (value: JsonValue) =
+        if argCount <= 0 then
+            JArray []
+        else
+            match value with
+            | JArray _ -> value
+            | _ -> JArray [ value ]
 
 module private MetadataExtraction =
     let extractEndpoints<'Api> () =
@@ -379,17 +400,26 @@ module private SchemaModel =
                         AdditionalResponses = Map.empty
                     }
 
-                let requestSchema =
+                let argCount = endpoint.ArgTypes.Length
+                let isGetEndpoint =
                     match endpoint.ArgTypes with
-                    | [] -> None
-                    | [ t ] when t = typeof<unit> -> None
-                    | [ t ] -> Some(schemaFor options state t)
-                    | manyArgs ->
-                        let properties =
-                            manyArgs
-                            |> List.mapi (fun idx argType -> sprintf "arg%d" (idx + 1), schemaFor options state argType, true)
+                    | [ t ] when t = typeof<unit> -> true
+                    | _ -> false
 
-                        Some(Object(properties, None, false))
+                let requestSchema =
+                    if isGetEndpoint then
+                        None
+                    else
+                        let itemSchema =
+                            match endpoint.ArgTypes with
+                            | [] -> Primitive(PString, None, false)
+                            | [ t ] -> schemaFor options state t
+                            | manyArgs ->
+                                manyArgs
+                                |> List.map (schemaFor options state)
+                                |> fun all -> OneOf(all, false)
+
+                        Some(Array(itemSchema, false))
 
                 let responseSchema =
                     if endpoint.ReturnType = typeof<unit> then
@@ -414,12 +444,16 @@ module private SchemaModel =
                 {
                     Name = endpoint.Name
                     Route = options.EndpointRouteStrategy endpoint.Name |> Utils.normalizePath
+                    HttpMethod = if isGetEndpoint then "get" else "post"
                     OperationId = options.OperationIdStrategy endpoint.Name
                     Summary = endpointDocs.Summary
                     Description = endpointDocs.Description
                     Tags = endpointDocs.Tags
                     RequestSchema = requestSchema
-                    RequestExample = endpointDocs.RequestExample |> Option.bind JsonValues.ofObj
+                    RequestExample =
+                        endpointDocs.RequestExample
+                        |> Option.bind JsonValues.ofObj
+                        |> Option.map (JsonValues.ensureArrayPayload argCount)
                     Responses = responses
                 })
 
@@ -667,7 +701,10 @@ module private JsonRendering =
             |> List.groupBy (fun operation -> operation.Route)
             |> List.sortBy fst
             |> List.map (fun (path, operations) ->
-                let op = operations.Head
+                let op =
+                    operations
+                    |> List.sortBy (fun operation -> operation.HttpMethod)
+                    |> List.head
 
                 let requestBodyField =
                     match op.RequestSchema with
@@ -740,7 +777,7 @@ module private JsonRendering =
 
                 let operationObject = JObject(withTags @ requestBodyField)
 
-                path, JObject [ "post", operationObject ])
+                path, JObject [ op.HttpMethod, operationObject ])
             |> JObject
 
         let schemas =
@@ -939,9 +976,79 @@ module OpenApi =
     let withEndpointDocs endpointName endpointDocs (options: OpenApiOptions) =
         { options with EndpointDocs = options.EndpointDocs |> Map.add endpointName endpointDocs }
 
+    let withEndpointDocsFor<'Api, 'Endpoint>
+        (endpointExpr: Expr<'Api -> 'Endpoint>)
+        endpointDocs
+        (options: OpenApiOptions)
+        =
+        let endpointName = EndpointExpressions.endpointName endpointExpr
+        withEndpointDocs endpointName endpointDocs options
+
+    let withEndpointRequestExampleFor<'Api, 'Input, 'Output>
+        (endpointExpr: Expr<'Api -> ('Input -> Async<'Output>)>)
+        (example: 'Input)
+        (options: OpenApiOptions)
+        =
+        let endpointName = EndpointExpressions.endpointName endpointExpr
+
+        let existing =
+            options.EndpointDocs
+            |> Map.tryFind endpointName
+            |> Option.defaultValue OpenApiDefaults.endpointDocumentation
+
+        withEndpointDocs
+            endpointName
+            { existing with RequestExample = Some(box example) }
+            options
+
+    let withEndpointResponseExampleFor<'Api, 'Output>
+        (endpointExpr: Expr<'Api -> Async<'Output>>)
+        (example: 'Output)
+        (options: OpenApiOptions)
+        =
+        let endpointName = EndpointExpressions.endpointName endpointExpr
+
+        let existing =
+            options.EndpointDocs
+            |> Map.tryFind endpointName
+            |> Option.defaultValue OpenApiDefaults.endpointDocumentation
+
+        withEndpointDocs
+            endpointName
+            { existing with ResponseExample = Some(box example) }
+            options
+
     let withOperationIdStrategy strategy (options: OpenApiOptions) = { options with OperationIdStrategy = strategy }
     let withEndpointRouteStrategy strategy (options: OpenApiOptions) = { options with EndpointRouteStrategy = strategy }
     let withSchemaNameStrategy strategy (options: OpenApiOptions) = { options with SchemaNameStrategy = strategy }
+
+    let withRemotingRouteBuilder<'Context, 'Api>
+        (remotingOptions: RemotingOptions<'Context, 'Api>)
+        (options: OpenApiOptions)
+        =
+        let apiTypeName = typeof<'Api>.Name
+        withEndpointRouteStrategy (fun endpointName -> remotingOptions.RouteBuilder apiTypeName endpointName) options
+
+    let withRemotingDocsRoutes<'Context, 'Api>
+        (remotingOptions: RemotingOptions<'Context, 'Api>)
+        (options: OpenApiOptions)
+        =
+        if options.Routes = OpenApiDefaults.options.Routes then
+            let apiTypeName = typeof<'Api>.Name
+            let docsBasePath =
+                remotingOptions.RouteBuilder apiTypeName "docs"
+                |> Utils.normalizePath
+
+            {
+                options with
+                    Routes = {
+                        JsonPath = docsBasePath + "/openapi.json"
+                        YamlPath = docsBasePath + "/openapi.yaml"
+                        DocsPath = docsBasePath
+                    }
+            }
+        else
+            options
 
     let generate<'Api> (options: OpenApiOptions) =
         let model = DocumentBuilding.build<'Api> options
@@ -953,6 +1060,7 @@ module OpenApi =
             Json = json
             Yaml = yaml
             Model = model :> obj
+            DocsContent = model.DocsContent
             Diagnostics = model.Diagnostics
             Routes = options.Routes
         }
@@ -967,76 +1075,44 @@ module OpenApi =
             Json = json
             Yaml = yaml
             Model = model :> obj
+            DocsContent = model.DocsContent
             Diagnostics = model.Diagnostics
             Routes = options.Routes
         }
 
-module OpenApiGiraffe =
-    let private docsHtml (document: OpenApiDocument) =
-        let docsBlocks =
-            (document.Model :?> OpenApiDocumentModel).DocsContent
-            |> List.map (fun block ->
-                let contentClass = if block.IsMarkdown then "doc-block markdown" else "doc-block"
-                sprintf "<section class=\"%s\"><h3>%s</h3><pre>%s</pre></section>" contentClass block.Title block.Content)
-            |> String.concat "\n"
+    let generateFromRemoting<'Context, 'Api>
+        (remotingOptions: RemotingOptions<'Context, 'Api>)
+        (options: OpenApiOptions)
+        =
+        options
+        |> withRemotingDocsRoutes remotingOptions
+        |> withRemotingRouteBuilder remotingOptions
+        |> generate<'Api>
 
-        sprintf
-            "<!doctype html>
-<html>
-<head>
-  <meta charset=\"utf-8\" />
-  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
-  <title>API Docs</title>
-  <link rel=\"stylesheet\" href=\"https://unpkg.com/swagger-ui-dist@5/swagger-ui.css\" />
-  <style>
-    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f5f7fb; }
-    #app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 100vh; }
-    #swagger-ui { background: #fff; }
-    .sidebar { background: linear-gradient(180deg, #11243a 0%%, #0e1724 100%%); color: #e6edf5; padding: 24px; overflow-y: auto; }
-    .sidebar h2 { margin: 0 0 8px 0; font-size: 1.2rem; }
-    .sidebar p { margin: 0 0 16px 0; opacity: 0.9; }
-    .doc-block { margin-top: 20px; }
-    .doc-block h3 { margin: 0 0 8px 0; }
-    .doc-block pre { background: #0a1220; color: #bfd6ff; padding: 12px; border-radius: 10px; white-space: pre-wrap; }
-    @media (max-width: 960px) {
-      #app { grid-template-columns: 1fr; }
-      .sidebar { order: -1; }
-    }
-  </style>
-</head>
-<body>
-  <div id=\"app\">
-    <div id=\"swagger-ui\"></div>
-    <aside class=\"sidebar\">
-      <h2>Documentation Notes</h2>
-      <p>Additional content configured through OpenApi options.</p>
-      %s
-    </aside>
-  </div>
-  <script src=\"https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js\"></script>
-  <script>
-    window.onload = function() {
-      window.ui = SwaggerUIBundle({
-        url: '%s',
-        dom_id: '#swagger-ui'
-      });
-    }
-  </script>
-</body>
-</html>"
-            docsBlocks
-            document.Routes.JsonPath
+module OpenAPI =
+    let withDocs<'Context, 'Api>
+        (remotingOptions: RemotingOptions<'Context, 'Api>)
+        (options: OpenApiOptions)
+        =
+        OpenApi.generateFromRemoting remotingOptions options
 
-    let httpHandler (document: OpenApiDocument) : HttpHandler =
-        choose [
-            route document.Routes.JsonPath
-            >=> setHttpHeader "Content-Type" "application/json; charset=utf-8"
-            >=> text document.Json
+    let withEndpointDocsFor<'Api, 'Endpoint>
+        (endpointExpr: Expr<'Api -> 'Endpoint>)
+        endpointDocs
+        (options: OpenApiOptions)
+        =
+        OpenApi.withEndpointDocsFor endpointExpr endpointDocs options
 
-            route document.Routes.YamlPath
-            >=> setHttpHeader "Content-Type" "application/yaml; charset=utf-8"
-            >=> text document.Yaml
+    let withEndpointRequestExampleFor<'Api, 'Input, 'Output>
+        (endpointExpr: Expr<'Api -> ('Input -> Async<'Output>)>)
+        (example: 'Input)
+        (options: OpenApiOptions)
+        =
+        OpenApi.withEndpointRequestExampleFor endpointExpr example options
 
-            route document.Routes.DocsPath
-            >=> htmlString (docsHtml document)
-        ]
+    let withEndpointResponseExampleFor<'Api, 'Output>
+        (endpointExpr: Expr<'Api -> Async<'Output>>)
+        (example: 'Output)
+        (options: OpenApiOptions)
+        =
+        OpenApi.withEndpointResponseExampleFor endpointExpr example options

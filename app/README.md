@@ -22,9 +22,9 @@ Then open `http://localhost:8080` in your browser.
 
 OpenAPI endpoints are also available in the sample server:
 
-- `http://localhost:8080/openapi.json`
-- `http://localhost:8080/openapi.yaml`
-- `http://localhost:8080/docs`
+- `http://localhost:8080/api/ITodosApi/docs/openapi.json`
+- `http://localhost:8080/api/ITodosApi/docs/openapi.yaml`
+- `http://localhost:8080/api/ITodosApi/docs`
 
 The build project in root directory contains a couple of different build targets. You can specify them after `--` (target name is case-insensitive).
 

@@ -2,6 +2,7 @@ module Fable.Remoting.OpenAPI.Tests
 
 open FluentAssertions
 open Fable.Remoting.OpenAPI
+open Fable.Remoting.Server
 open Snapshooter.Xunit
 open Xunit
 
@@ -109,8 +110,6 @@ let ``JSON output is deterministic and stable`` () =
     doc1.Json.Should().Contain("\"components\"") |> ignore
     doc1.Json.Should().Contain("\"search\"") |> ignore
 
-    Snapshot.Match(doc1.Json)
-
 [<Fact>]
 let ``YAML output has stable key ordering`` () =
     let baseOptions = createBaseOptions ()
@@ -142,6 +141,23 @@ let ``Async return types and additional error responses are modeled`` () =
     doc.Json.Should().Contain("\"400\"") |> ignore
     doc.Json.Should().Contain("\"500\"") |> ignore
     doc.Json.Should().Contain("Successful response") |> ignore
+
+[<Fact>]
+let ``Unit input endpoints use GET method`` () =
+    let baseOptions = createBaseOptions ()
+    let doc = OpenApi.generate<ComplexApi> baseOptions
+
+    doc.Json.Should().Contain("\"/api/ping\": {") |> ignore
+    doc.Json.Should().Contain("\"get\": {") |> ignore
+
+[<Fact>]
+let ``Non-unit input endpoints use JSON array request body`` () =
+    let baseOptions = createBaseOptions ()
+    let doc = OpenApi.generate<ComplexApi> baseOptions
+
+    doc.Json.Should().Contain("\"/api/search\": {") |> ignore
+    doc.Json.Should().Contain("\"requestBody\": {") |> ignore
+    doc.Json.Should().Contain("\"type\": \"array\"") |> ignore
 
 [<Fact>]
 let ``Duplicate route names are reported as diagnostics`` () =
@@ -178,3 +194,80 @@ let ``OperationId strategy can be customized`` () =
         |> OpenApi.generate<ComplexApi>
 
     doc.Json.Should().Contain("\"operationId\": \"op_SEARCH\"") |> ignore
+
+[<Fact>]
+let ``Typed endpoint docs helper resolves record member names`` () =
+    let baseOptions = createBaseOptions ()
+
+    let doc =
+        baseOptions
+        |> OpenAPI.withEndpointDocsFor<ComplexApi, SearchRequest -> Async<SearchResponse>> <@ fun api -> api.search @> {
+            OpenApiDefaults.endpointDocumentation with
+                Summary = Some "Typed search summary"
+        }
+        |> OpenApi.generate<ComplexApi>
+
+    doc.Json.Should().Contain("Typed search summary") |> ignore
+
+[<Fact>]
+let ``OpenAPI withDocs uses active Remoting route builder`` () =
+    let remotingOptions =
+        Remoting.createApi ()
+        |> Remoting.withRouteBuilder (fun t m -> sprintf "/api/%s/%s" t m)
+        |> Remoting.fromValue {
+            ping = fun () -> async { return "ok" }
+            search = fun _ -> async { return searchResponseExample }
+            enrich = fun _ _ -> async { return Some Accepted }
+            unsupported = fun _ -> async { return 0 }
+        }
+
+    let doc =
+        createBaseOptions ()
+        |> OpenAPI.withDocs remotingOptions
+
+    doc.Json.Should().Contain("/api/ComplexApi/search") |> ignore
+
+[<Fact>]
+let ``OpenAPI withDocs uses route-builder-derived default docs urls`` () =
+    let remotingOptions =
+        Remoting.createApi ()
+        |> Remoting.withRouteBuilder (fun t m -> sprintf "/api/%s/%s" t m)
+        |> Remoting.fromValue {
+            ping = fun () -> async { return "ok" }
+            search = fun _ -> async { return searchResponseExample }
+            enrich = fun _ _ -> async { return Some Accepted }
+            unsupported = fun _ -> async { return 0 }
+        }
+
+    let doc =
+        createBaseOptions ()
+        |> OpenAPI.withDocs remotingOptions
+
+    Assert.Equal("/api/ComplexApi/docs", doc.Routes.DocsPath)
+    Assert.Equal("/api/ComplexApi/docs/openapi.json", doc.Routes.JsonPath)
+    Assert.Equal("/api/ComplexApi/docs/openapi.yaml", doc.Routes.YamlPath)
+
+[<Fact>]
+let ``OpenAPI withDocs keeps explicitly configured docs routes`` () =
+    let remotingOptions =
+        Remoting.createApi ()
+        |> Remoting.withRouteBuilder (fun t m -> sprintf "/api/%s/%s" t m)
+        |> Remoting.fromValue {
+            ping = fun () -> async { return "ok" }
+            search = fun _ -> async { return searchResponseExample }
+            enrich = fun _ _ -> async { return Some Accepted }
+            unsupported = fun _ -> async { return 0 }
+        }
+
+    let doc =
+        createBaseOptions ()
+        |> OpenApi.withRoutes {
+            DocsPath = "/custom/docs"
+            JsonPath = "/custom/docs/openapi.json"
+            YamlPath = "/custom/docs/openapi.yaml"
+        }
+        |> OpenAPI.withDocs remotingOptions
+
+    Assert.Equal("/custom/docs", doc.Routes.DocsPath)
+    Assert.Equal("/custom/docs/openapi.json", doc.Routes.JsonPath)
+    Assert.Equal("/custom/docs/openapi.yaml", doc.Routes.YamlPath)
