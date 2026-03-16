@@ -1,5 +1,10 @@
 # Fable.Remoting.OpenAPI
 
+![NuGet Downloads](https://img.shields.io/nuget/dt/Fable.Remoting.OpenAPI?style=plastic&label=Fable.Remoting.OpenAPI&link=https%3A%2F%2Fwww.nuget.org%2Fpackages%2FFable.Remoting.OpenAPI)
+![NuGet Downloads](https://img.shields.io/nuget/dt/Fable.Remoting.OpenAPI.Giraffe?style=plastic&label=Fable.Remoting.OpenAPI.Giraffe&link=https%3A%2F%2Fwww.nuget.org%2Fpackages%2FFable.Remoting.OpenAPI.Giraffe)
+![NuGet Downloads](https://img.shields.io/nuget/dt/Fable.Remoting.OpenAPI.Suave?style=plastic&label=Fable.Remoting.OpenAPI.Suave&link=https%3A%2F%2Fwww.nuget.org%2Fpackages%2FFable.Remoting.OpenAPI.Suave)
+
+
 OpenAPI generation for Fable.Remoting contracts.
 
 ## Packages
