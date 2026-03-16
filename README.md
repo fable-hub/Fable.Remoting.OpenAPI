@@ -1,6 +1,6 @@
 # Fable.Remoting.OpenAPI
 
-OpenAPI generation for Fable.Remoting record-of-functions contracts.
+OpenAPI generation for Fable.Remoting contracts.
 
 ## Packages
 
@@ -15,6 +15,9 @@ OpenAPI generation for Fable.Remoting record-of-functions contracts.
 - Remoting-aware route generation (uses active route builder).
 - Defaults docs routes from route builder and API type name.
 - Deterministic output suitable for snapshot-style tests.
+
+> [!NOTE]
+> This project was instantiated by AI agents and was not fully reviewed by humans at the time of this commit. It was done to quickly deviler a working prototype of the intended functionality.
 
 ## Core Usage
 

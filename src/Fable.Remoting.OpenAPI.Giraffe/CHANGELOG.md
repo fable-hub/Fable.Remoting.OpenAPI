@@ -7,6 +7,8 @@ and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
 
+# 0.0.1 - 2026-03-16
+
 ### Added
 
 - Dedicated Giraffe adapter package for docs and remoting composition.

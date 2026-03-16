@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <PackageTags>fsharp;html</PackageTags>
     <TargetFramework>net8.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
+    <Authors>Freymaurer</Authors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <PackageReference Include="Fable.Remoting.Server" Version="5.23.0" />
-    <PackageReference Include="FSharp.Core" Version="8.0.403" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
