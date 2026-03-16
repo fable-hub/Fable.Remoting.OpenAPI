@@ -8,11 +8,10 @@
   <ItemGroup>
     <Compile Include="Helpers.fs" />
     <Compile Include="Build.fs" />
-    <None Include="paket.dependencies" />
-    <None Include="paket.references" />
   </ItemGroup>
-  <Target Name="DotNetToolRestore" BeforeTargets="PaketRestore">
-    <Exec Command="dotnet tool restore" />
-  </Target>
-  <Import Project=".paket\Paket.Restore.targets" />
+  <ItemGroup>
+    <PackageReference Include="Fake.Core.Target" />
+    <PackageReference Include="Fake.IO.FileSystem" />
+    <PackageReference Include="Farmer" />
+  </ItemGroup>
 </Project>

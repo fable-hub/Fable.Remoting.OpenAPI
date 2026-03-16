@@ -1,6 +1,249 @@
 {
-  "version": 1,
+  "version": 2,
   "dependencies": {
-    "net8.0": {}
+    "net8.0": {
+      "FSharp.Core": {
+        "type": "Direct",
+        "requested": "[8.0.403, )",
+        "resolved": "8.0.403",
+        "contentHash": "t1Pvv2++3zMQKKNuiQc1Lz4TCdaBajgG4mLhOE8AoFzborHQ/JbjIaJr6Mrq8m2z15KLu4r6Qz7E3oeACpljTg=="
+      },
+      "SAFE.Server": {
+        "type": "Direct",
+        "requested": "[5.1.2, )",
+        "resolved": "5.1.2",
+        "contentHash": "JTrIRtU2UfodDBrrAZQN5/y42jQG1+HADgKNp3KJJLemmy6Q8C+bf3S+uxrckDtMbJeiMVzIbOOAgdGx6RcIhA==",
+        "dependencies": {
+          "FSharp.Core": "[8.0.403, 9.0.0)",
+          "Fable.Remoting.Giraffe": "[5.21.0, 6.0.0)",
+          "SAFE.Server.Utils": "[5.0.0, 6.0.0)",
+          "Saturn": "[0.17.0, 1.0.0)"
+        }
+      },
+      "Fable.Remoting.Json": {
+        "type": "Transitive",
+        "resolved": "2.25.0",
+        "contentHash": "ycmxT5L7jUKLkSJ4uti+WiX1OU50UYhLLiFQwJpQzwPWpNbSXowPjUtGycl8G5429edzeIHGW/77hUlIAufiAg==",
+        "dependencies": {
+          "FSharp.Core": "6.0.0",
+          "Newtonsoft.Json": "13.0.3"
+        }
+      },
+      "Fable.Remoting.MsgPack": {
+        "type": "Transitive",
+        "resolved": "1.24.0",
+        "contentHash": "Bn3nzoZbib6lPk70bIJumEu2wFMxciB4o8k0Zw6tRfAOpNKvUsi79OOll2nW3FU1P6MVBepT43m+R8JvfYnNiw==",
+        "dependencies": {
+          "FSharp.Core": "4.7.2"
+        }
+      },
+      "FSharp.Control.Websockets": {
+        "type": "Transitive",
+        "resolved": "0.2.2",
+        "contentHash": "MAHcOmbJdG6NNHBiylN8wIfz/mZ7WvWNYCKK5vXxkD/1tFYdN8l1UsRmoUvIqICRCAQ050qU4hpmaa/B2hd67g==",
+        "dependencies": {
+          "FSharp.Core": "4.3.4",
+          "Microsoft.IO.RecyclableMemoryStream": "1.2.2"
+        }
+      },
+      "Giraffe": {
+        "type": "Transitive",
+        "resolved": "6.4.0",
+        "contentHash": "rkvQX5JMML0SrXgblUOT76bNBhmIFLnjObmm5gaT/3k848m4BEDzdrTihFV+g8VNdmmvOsA2F1u5KV/YPRq87g==",
+        "dependencies": {
+          "FSharp.Core": "6.0.0",
+          "Giraffe.ViewEngine": "1.4.0",
+          "Microsoft.IO.RecyclableMemoryStream": "3.0.0",
+          "Newtonsoft.Json": "13.0.3",
+          "System.Text.Json": "8.0.3"
+        }
+      },
+      "Giraffe.ViewEngine": {
+        "type": "Transitive",
+        "resolved": "1.4.0",
+        "contentHash": "gWzlp8KGDLaPHMm/xGzfLT1e9wZaJhBKhEuMsPRBSn7wAMkSgMcaqJlWl8mFGCcOOx0r9UyDJvCJJQyljYmo+g==",
+        "dependencies": {
+          "FSharp.Core": "5.0.0"
+        }
+      },
+      "Microsoft.AspNetCore.Authentication.JwtBearer": {
+        "type": "Transitive",
+        "resolved": "6.0.3",
+        "contentHash": "yXadCTYfe0AhgVZxLhG4ltra1BhteDumot2YRtQLOpJIVIPzanNsbFjeXomXiWWiU8qWNrK++gGYox3DaJBThg==",
+        "dependencies": {
+          "Microsoft.IdentityModel.Protocols.OpenIdConnect": "6.10.0"
+        }
+      },
+      "Microsoft.AspNetCore.WebUtilities": {
+        "type": "Transitive",
+        "resolved": "2.3.0",
+        "contentHash": "trbXdWzoAEUVd0PE2yTopkz4kjZaAIA7xUWekd5uBw+7xE8Do/YOVTeb9d9koPTlbtZT539aESJjSLSqD8eYrQ==",
+        "dependencies": {
+          "Microsoft.Net.Http.Headers": "2.3.0",
+          "System.Text.Encodings.Web": "8.0.0"
+        }
+      },
+      "Microsoft.CSharp": {
+        "type": "Transitive",
+        "resolved": "4.5.0",
+        "contentHash": "kaj6Wb4qoMuH3HySFJhxwQfe8R/sJsNJnANrvv8WdFPMoNbKY5htfNscv+LHCu5ipz+49m2e+WQXpLXr9XYemQ=="
+      },
+      "Microsoft.Extensions.Primitives": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "bXJEZrW9ny8vjMF1JV253WeLhpEVzFo1lyaZu1vQ4ZxWUlVvknZ/+ftFgVheLubb4eZPSwwxBeqS1JkCOjxd8g=="
+      },
+      "Microsoft.IdentityModel.JsonWebTokens": {
+        "type": "Transitive",
+        "resolved": "6.10.0",
+        "contentHash": "0qjS31rN1MQTc46tAYbzmMTSRfdV5ndZxSjYxIGqKSidd4wpNJfNII/pdhU5Fx8olarQoKL9lqqYw4yNOIwT0Q==",
+        "dependencies": {
+          "Microsoft.IdentityModel.Tokens": "6.10.0"
+        }
+      },
+      "Microsoft.IdentityModel.Logging": {
+        "type": "Transitive",
+        "resolved": "6.10.0",
+        "contentHash": "zbcwV6esnNzhZZ/VP87dji6VrUBLB5rxnZBkDMqNYpyG+nrBnBsbm4PUYLCBMUflHCM9EMLDG0rLnqqT+l0ldA=="
+      },
+      "Microsoft.IdentityModel.Protocols": {
+        "type": "Transitive",
+        "resolved": "6.10.0",
+        "contentHash": "DFyXD0xylP+DknCT3hzJ7q/Q5qRNu0hO/gCU90O0ATdR0twZmlcuY9RNYaaDofXKVbzcShYNCFCGle2G/o8mkg==",
+        "dependencies": {
+          "Microsoft.IdentityModel.Logging": "6.10.0",
+          "Microsoft.IdentityModel.Tokens": "6.10.0"
+        }
+      },
+      "Microsoft.IdentityModel.Protocols.OpenIdConnect": {
+        "type": "Transitive",
+        "resolved": "6.10.0",
+        "contentHash": "LVvMXAWPbPeEWTylDrxunlHH2wFyE4Mv0L4gZrJHC4HTESbWHquKZb/y/S8jgiQEDycOP0PDQvbG4RR/tr2TVQ==",
+        "dependencies": {
+          "Microsoft.IdentityModel.Protocols": "6.10.0",
+          "System.IdentityModel.Tokens.Jwt": "6.10.0"
+        }
+      },
+      "Microsoft.IdentityModel.Tokens": {
+        "type": "Transitive",
+        "resolved": "6.10.0",
+        "contentHash": "qbf1NslutDB4oLrriYTJpy7oB1pbh2ej2lEHd2IPDQH9C74ysOdhU5wAC7KoXblldbo7YsNR2QYFOqQM/b0Rsg==",
+        "dependencies": {
+          "Microsoft.CSharp": "4.5.0",
+          "Microsoft.IdentityModel.Logging": "6.10.0",
+          "System.Security.Cryptography.Cng": "4.5.0"
+        }
+      },
+      "Microsoft.IO.RecyclableMemoryStream": {
+        "type": "Transitive",
+        "resolved": "3.0.0",
+        "contentHash": "irv0HuqoH8Ig5i2fO+8dmDNdFdsrO+DoQcedwIlb810qpZHBNQHZLW7C/AHBQDgLLpw2T96vmMAy/aE4Yj55Sg=="
+      },
+      "Microsoft.Net.Http.Headers": {
+        "type": "Transitive",
+        "resolved": "2.3.0",
+        "contentHash": "/M0wVg6tJUOHutWD3BMOUVZAioJVXe0tCpFiovzv0T9T12TBf4MnaHP0efO8TCr1a6O9RZgQeZ9Gdark8L9XdA==",
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "8.0.0",
+          "System.Buffers": "4.6.0"
+        }
+      },
+      "Newtonsoft.Json": {
+        "type": "Transitive",
+        "resolved": "13.0.3",
+        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
+      },
+      "SAFE.Server.Utils": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "zgrM74MVCByH0pAAdj2D9zms1JSnkgU1/5fDE/BG+z1JS/nPzbkyqUjg0ReAgEo+/6Z9EGsdX0cBdFvQ/F3S6Q==",
+        "dependencies": {
+          "Fable.Remoting.Giraffe": "5.21.0"
+        }
+      },
+      "Saturn": {
+        "type": "Transitive",
+        "resolved": "0.17.0",
+        "contentHash": "8tg379A5VKmOODy92LyULLkS3KJOK9zVtj8xEfOdkLxR+KAoh0iY3pA3p0PXs0TH5r8919bB2a4eJbdD36gr/w==",
+        "dependencies": {
+          "FSharp.Control.Websockets": "0.2.2",
+          "Giraffe": "6.4.0",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "6.0.3"
+        }
+      },
+      "System.Buffers": {
+        "type": "Transitive",
+        "resolved": "4.6.0",
+        "contentHash": "lN6tZi7Q46zFzAbRYXTIvfXcyvQQgxnY7Xm6C6xQ9784dEL1amjM6S6Iw4ZpsvesAKnRVsM4scrDQaDqSClkjA=="
+      },
+      "System.IdentityModel.Tokens.Jwt": {
+        "type": "Transitive",
+        "resolved": "6.10.0",
+        "contentHash": "C+Q5ORsFycRkRuvy/Xd0Pv5xVpmWSAvQYZAGs7VQogmkqlLhvfZXTgBIlHqC3cxkstSoLJAYx6xZB7foQ2y5eg==",
+        "dependencies": {
+          "Microsoft.IdentityModel.JsonWebTokens": "6.10.0",
+          "Microsoft.IdentityModel.Tokens": "6.10.0"
+        }
+      },
+      "System.Security.Cryptography.Cng": {
+        "type": "Transitive",
+        "resolved": "4.5.0",
+        "contentHash": "WG3r7EyjUe9CMPFSs6bty5doUqT+q9pbI80hlNzo2SkPkZ4VTuZkGWjpp77JB8+uaL4DFPRdBsAY+DX3dBK92A=="
+      },
+      "System.Text.Encodings.Web": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "yev/k9GHAEGx2Rg3/tU6MQh4HGBXJs70y7j1LaM1i/ER9po+6nnQ6RRqTJn1E7Xu0fbIFK80Nh5EoODxrbxwBQ=="
+      },
+      "fable.remoting.openapi": {
+        "type": "Project",
+        "dependencies": {
+          "Fable.Remoting.Server": "[5.23.0, )",
+          "System.Text.Json": "[8.0.5, )"
+        }
+      },
+      "fable.remoting.openapi.giraffe": {
+        "type": "Project",
+        "dependencies": {
+          "Fable.Remoting.Giraffe": "[5.23.0, )",
+          "Fable.Remoting.OpenAPI": "[1.0.0, )"
+        }
+      },
+      "shared": {
+        "type": "Project"
+      },
+      "Fable.Remoting.Giraffe": {
+        "type": "CentralTransitive",
+        "requested": "[5.23.0, )",
+        "resolved": "5.23.0",
+        "contentHash": "sOy2GtJnEPQT1RV4YVluzrQyCrXWwUAbDecO2N+XPtCG5ibYJE01jnWXD6u4ql9YV5vF97jH/cg2q3+PFQ9HTw==",
+        "dependencies": {
+          "FSharp.Core": "6.0.0",
+          "Fable.Remoting.Server": "5.41.0",
+          "Giraffe": "5.0.0",
+          "Microsoft.IO.RecyclableMemoryStream": "[3.0.0, 4.0.0)"
+        }
+      },
+      "Fable.Remoting.Server": {
+        "type": "CentralTransitive",
+        "requested": "[5.23.0, )",
+        "resolved": "5.41.0",
+        "contentHash": "ZT6h4LoT5M0fto9Fn0Jkaim7DwyQDk9s+LiA4pNNNAGEky2Tgmj9zlHtNJIswMrgc+/cnxgaMtQyo0g+ufztDA==",
+        "dependencies": {
+          "FSharp.Core": "6.0.0",
+          "Fable.Remoting.Json": "2.25.0",
+          "Fable.Remoting.MsgPack": "1.24.0",
+          "Microsoft.AspNetCore.WebUtilities": "2.3.0",
+          "Microsoft.IO.RecyclableMemoryStream": "[3.0.0, 4.0.0)",
+          "Microsoft.Net.Http.Headers": "2.3.0"
+        }
+      },
+      "System.Text.Json": {
+        "type": "CentralTransitive",
+        "requested": "[8.0.5, )",
+        "resolved": "8.0.5",
+        "contentHash": "0f1B50Ss7rqxXiaBJyzUu9bWFOO2/zSlifZ/UNMdiIpDYe4cY4LQQicP4nirK1OS31I43rn062UIJ1Q9bpmHpg=="
+      }
+    }
   }
 }

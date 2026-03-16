@@ -17,8 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fable.Remoting.Giraffe" Version="5.23.0" />
-    <PackageReference Include="FSharp.Core" Version="8.0.403" />
+    <PackageReference Include="Fable.Remoting.Giraffe" />
   </ItemGroup>
 
 </Project>

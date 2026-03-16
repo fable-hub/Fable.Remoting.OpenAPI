@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fable.Remoting.Server" Version="5.23.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Fable.Remoting.Server" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
 </Project>

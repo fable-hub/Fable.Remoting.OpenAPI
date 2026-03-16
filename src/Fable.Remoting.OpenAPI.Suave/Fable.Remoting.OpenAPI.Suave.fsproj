@@ -17,8 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Suave" Version="2.6.2" />
-    <PackageReference Include="FSharp.Core" Version="8.0.403" />
+    <PackageReference Include="Suave" />
   </ItemGroup>
 
 </Project>

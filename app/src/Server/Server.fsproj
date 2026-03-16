@@ -6,12 +6,13 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="paket.references" />
     <Compile Include="Server.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Shared\Shared.fsproj" />
     <ProjectReference Include="..\..\..\src\Fable.Remoting.OpenAPI.Giraffe\Fable.Remoting.OpenAPI.Giraffe.fsproj" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
+  <ItemGroup>
+    <PackageReference Include="SAFE.Server" />
+  </ItemGroup>
 </Project>

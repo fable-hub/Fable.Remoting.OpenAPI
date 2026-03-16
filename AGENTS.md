@@ -54,6 +54,7 @@ Instructions for future AI coding agents working in this repository.
   - adapter tests
   - sample app docs links
   - README and CONTRIBUTING
+  - project specific CHANGELOG.md with details and rationale.
 
 ## CI Alignment
 
