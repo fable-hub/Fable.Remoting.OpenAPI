@@ -108,7 +108,7 @@ let view model dispatch =
                 prop.name "viewport"
                 prop.content "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
             ]
-            
+
             // Background div with image and glass effect
             Html.div [
                 prop.className "absolute inset-0 bg-cover bg-center bg-fixed bg-no-repeat
