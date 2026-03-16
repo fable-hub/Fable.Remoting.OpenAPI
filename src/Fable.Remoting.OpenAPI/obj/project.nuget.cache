@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "G4fo4Lba7iY=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Kevin\\source\\repos\\Fable.Remoting.OpenApi\\src\\Fable.Remoting.OpenAPI\\Fable.Remoting.OpenAPI.fsproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Kevin\\.nuget\\packages\\fsharp.core\\10.0.100\\fsharp.core.10.0.100.nupkg.sha512",
+    "C:\\Users\\Kevin\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+    "C:\\Users\\Kevin\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

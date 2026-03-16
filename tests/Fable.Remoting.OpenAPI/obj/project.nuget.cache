@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "zI0S65ubsro=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Kevin\\source\\repos\\Fable.Remoting.OpenApi\\tests\\Fable.Remoting.OpenAPI\\Fable.Remoting.OpenAPI.fsproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Kevin\\.nuget\\packages\\fsharp.core\\10.0.100\\fsharp.core.10.0.100.nupkg.sha512"
+  ],
+  "logs": []
+}
