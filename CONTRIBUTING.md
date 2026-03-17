@@ -36,6 +36,8 @@ Run the package test suite:
 dotnet test ./Fable.Remoting.OpenApi.sln
 ```
 
+When changing schema rendering or endpoint examples, ensure generated output remains compatible with Fable.Remoting.Json serialization semantics.
+
 Optional targeted test run:
 
 ```bash

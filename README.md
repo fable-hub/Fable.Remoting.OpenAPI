@@ -20,6 +20,8 @@ OpenAPI generation for Fable.Remoting contracts.
 - Remoting-aware route generation (uses active route builder).
 - Defaults docs routes from route builder and API type name.
 - Deterministic output suitable for snapshot-style tests.
+- Native Fable.Remoting.Json-compatible example serialization.
+- Discriminated union schema modeling aligned with Fable.Remoting JSON wire shapes.
 
 > [!NOTE]
 > This project was instantiated by AI agents and was not fully reviewed by humans at the time of this commit. It was done to quickly deviler a working prototype of the intended functionality.

@@ -29,13 +29,13 @@ module Storage =
         else
             Result.Error "Invalid todo"
 
-    let updateTodo (newTodo: Todo) =
-        if Todo.isValid newTodo.Description then
+    let updateTodo (id: System.Guid) (description: string) =
+        if Todo.isValid description then
             todos
-            |> Seq.tryFindIndex (fun t -> t.Id = newTodo.Id)
+            |> Seq.tryFindIndex (fun t -> t.Id = id)
             |> function
                 | Some index ->
-                    todos.[index] <- newTodo
+                    todos.[index] <- { Id = id; Description = description }
                     Result.Ok()
                 | None -> Result.Error "Todo not found"
         else
@@ -57,11 +57,21 @@ let todosApi ctx = {
                 | Result.Ok() -> Storage.todos |> List.ofSeq
                 | Result.Error e -> failwith e
         }
-    updateTodo = fun (todo: Todo) -> async {
+    updateTodo = fun (todo: TodoUpdate) -> async {
         return
-            match Storage.updateTodo todo with
-            | Result.Ok() -> Storage.todos |> List.ofSeq
-            | Result.Error e -> failwith e
+            match todo with
+            | TodoUpdate.Create description ->
+                match Storage.addTodo (Todo.create description) with
+                | Result.Ok() -> Storage.todos |> List.ofSeq
+                | Result.Error e -> failwith e
+            | TodoUpdate.Update (id, description) ->
+                match Storage.updateTodo id description with
+                | Result.Ok() -> Storage.todos |> List.ofSeq
+                | Result.Error e -> failwith e
+            | TodoUpdate.Delete id ->
+                match Storage.deleteTodo id with
+                | Result.Ok() -> Storage.todos |> List.ofSeq
+                | Result.Error e -> failwith e
     }
     deleteTodo = fun todoId ->
         async {
@@ -69,6 +79,26 @@ let todosApi ctx = {
                 match Storage.deleteTodo todoId with
                 | Result.Ok() -> Storage.todos |> List.ofSeq
                 | Result.Error e -> failwith e
+        }
+    deleteTodos = fun todoIds ->
+        async {
+            let results =
+                todoIds
+                |> Seq.map Storage.deleteTodo
+                |> Seq.toList
+            match results |> List.tryFind (function
+                Result.Error _ -> true
+                | _ -> false
+                ) with
+            | Some (Result.Error e) ->
+                return failwith e
+            | _ ->
+                return Storage.todos |> List.ofSeq
+        }
+    clearTodos = fun () ->
+        async {
+            Storage.todos.Clear()
+            return Result.Ok()
         }
 }
 
@@ -126,7 +156,17 @@ let remotingApi =
         |> OpenApi.withEndpointRequestExampleFor<ITodosApi, System.Guid, Todo list>
             <@ fun api -> api.deleteTodo @>
             Storage.DEFAULT_TODO_GUIDE
-        // updateTodo intentionally left without docs to demonstrate default behavior
+        // updateTodo
+        |> OpenApi.withEndpointDocsFor<ITodosApi, TodoUpdate -> Async<Todo list>> <@ fun api -> api.updateTodo @> {
+            OpenApiDefaults.endpointDocumentation with
+                Summary = Some "Update a todo"
+                Description = Some "Updates a todo by id if it exists and returns the updated list. Also supports creating and deleting via discriminated union cases."
+                Tags = [ "Todos" ]
+        }
+        |> OpenApi.withEndpointRequestExampleFor<ITodosApi, TodoUpdate, Todo list>
+            <@ fun api -> api.updateTodo @>
+            (TodoUpdate.Update (Storage.DEFAULT_TODO_GUIDE, "Write more tests"))
+        // deleteTodos and clearTodos intentionally left without docs to demonstrate default behavior
 
     Remoting.createApi ()
     |> Remoting.withRouteBuilder Route.builder

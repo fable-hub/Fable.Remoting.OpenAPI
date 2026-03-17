@@ -33,11 +33,21 @@ type Outcome =
     | Accepted
     | Rejected of reason: string
 
+type ShippingStatus =
+    | Created
+    | Failed of reason: string
+    | Dispatched of trackingId: string * attempts: int
+
 type ComplexApi = {
     ping: unit -> Async<string>
     search: SearchRequest -> Async<SearchResponse>
     enrich: string -> int -> Async<Outcome option>
     unsupported: (int -> int) -> Async<int>
+}
+
+type DuApi = {
+    getStatus: unit -> Async<ShippingStatus>
+    updateStatus: ShippingStatus -> Async<unit>
 }
 
 let private searchRequestExample : SearchRequest = {
@@ -387,3 +397,94 @@ let ``Named response examples are emitted for non-unit endpoints`` () =
     let alternate = examples.GetProperty("alternate")
     alternate.GetProperty("externalValue").GetString().Should().Be("https://example.test/examples/search-response-alt.json")
     |> ignore
+
+[<Fact>]
+let ``Union schema models Fable.Remoting JSON wire shape`` () =
+    let doc =
+        OpenApi.options
+        |> OpenApi.withTitle "DU API"
+        |> OpenApi.withVersion "1.0.0"
+        |> OpenApi.generate<DuApi>
+
+    use parsed = JsonDocument.Parse(doc.Json)
+    let oneOf =
+        parsed.RootElement
+            .GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty("ShippingStatus")
+            .GetProperty("oneOf")
+
+    let hasCreatedCaseAsStringEnum =
+        oneOf.EnumerateArray()
+        |> Seq.exists (fun schema ->
+            match schema.TryGetProperty("enum") with
+            | true, enumNode ->
+                enumNode.EnumerateArray()
+                |> Seq.exists (fun entry -> entry.GetString() = "Created")
+            | false, _ -> false)
+
+    let hasFailedCaseAsNamedObject =
+        oneOf.EnumerateArray()
+        |> Seq.exists (fun schema ->
+            match schema.TryGetProperty("properties") with
+            | true, props ->
+                (props.TryGetProperty("Failed") |> fst)
+            | false, _ -> false)
+
+    let hasDispatchedCaseAsNamedObject =
+        oneOf.EnumerateArray()
+        |> Seq.exists (fun schema ->
+            match schema.TryGetProperty("properties") with
+            | true, props ->
+                (props.TryGetProperty("Dispatched") |> fst)
+            | false, _ -> false)
+
+    hasCreatedCaseAsStringEnum.Should().BeTrue() |> ignore
+    hasFailedCaseAsNamedObject.Should().BeTrue() |> ignore
+    hasDispatchedCaseAsNamedObject.Should().BeTrue() |> ignore
+
+[<Fact>]
+let ``DU examples use Fable.Remoting JSON serialization`` () =
+    let doc =
+        OpenApi.options
+        |> OpenApi.withTitle "DU API"
+        |> OpenApi.withVersion "1.0.0"
+        |> OpenApi.withEndpointRequestExampleFor<DuApi, ShippingStatus, unit>
+            <@ fun api -> api.updateStatus @>
+            (Failed "invalid-address")
+        |> OpenApi.withEndpointResponseExampleFor<DuApi, unit -> Async<ShippingStatus>, ShippingStatus>
+            <@ fun api -> api.getStatus @>
+            (Dispatched("trk-123", 2))
+        |> OpenApi.generate<DuApi>
+
+    use parsed = JsonDocument.Parse(doc.Json)
+
+    let requestExample =
+        parsed.RootElement
+            .GetProperty("paths")
+            .GetProperty("/api/updateStatus")
+            .GetProperty("post")
+            .GetProperty("requestBody")
+            .GetProperty("content")
+            .GetProperty("application/json")
+            .GetProperty("example")
+            .EnumerateArray()
+            |> Seq.head
+
+    let responseExample =
+        parsed.RootElement
+            .GetProperty("paths")
+            .GetProperty("/api/getStatus")
+            .GetProperty("get")
+            .GetProperty("responses")
+            .GetProperty("200")
+            .GetProperty("content")
+            .GetProperty("application/json")
+            .GetProperty("example")
+            .GetProperty("Dispatched")
+            .EnumerateArray()
+            |> Seq.toArray
+
+    requestExample.GetProperty("Failed").GetString().Should().Be("invalid-address") |> ignore
+    responseExample.[0].GetString().Should().Be("trk-123") |> ignore
+    responseExample.[1].GetInt32().Should().Be(2) |> ignore

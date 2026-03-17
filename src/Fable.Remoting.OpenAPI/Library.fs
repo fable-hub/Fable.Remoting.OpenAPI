@@ -6,9 +6,11 @@ open System.Globalization
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 open System.Text
-open System.Text.Json
 open System.Threading.Tasks
 open Fable.Remoting.Server
+open Fable.Remoting.Json
+open Newtonsoft.Json
+open Newtonsoft.Json.Linq
 open FSharp.Reflection
 
 type OpenApiContact = {
@@ -208,30 +210,48 @@ module private EndpointExpressions =
                 "Endpoint expression must be of the form <@ fun api -> api.someMember @>."
 
 module private JsonValues =
-    let rec ofJsonElement (element: JsonElement) : JsonValue =
-        match element.ValueKind with
-        | JsonValueKind.Null
-        | JsonValueKind.Undefined -> JNull
-        | JsonValueKind.True -> JBool true
-        | JsonValueKind.False -> JBool false
-        | JsonValueKind.Number -> JNumber(element.GetRawText())
-        | JsonValueKind.String -> JString(element.GetString())
-        | JsonValueKind.Array ->
-            element.EnumerateArray() |> Seq.map ofJsonElement |> Seq.toList |> JArray
-        | JsonValueKind.Object ->
-            element.EnumerateObject()
-            |> Seq.map (fun p -> p.Name, ofJsonElement p.Value)
+    let private converter = FableJsonConverter()
+
+    let rec ofJToken (token: JToken) : JsonValue =
+        match token.Type with
+        | JTokenType.Null
+        | JTokenType.Undefined -> JNull
+        | JTokenType.Boolean -> JBool(token.Value<bool>())
+        | JTokenType.Integer
+        | JTokenType.Float -> JNumber(token.ToString(Formatting.None))
+        | JTokenType.String -> JString(token.Value<string>())
+        | JTokenType.Date
+        | JTokenType.TimeSpan
+        | JTokenType.Guid
+        | JTokenType.Uri
+        | JTokenType.Bytes -> JString(token.ToString())
+        | JTokenType.Array ->
+            token.Children()
+            |> Seq.map ofJToken
+            |> Seq.toList
+            |> JArray
+        | JTokenType.Object ->
+            token.Children<JProperty>()
+            |> Seq.map (fun p -> p.Name, ofJToken p.Value)
             |> Seq.toList
             |> JObject
-        | _ -> JNull
+        | _ ->
+            match token with
+            | :? JValue as v ->
+                match v.Value with
+                | null -> JNull
+                | :? bool as b -> JBool b
+                | :? string as s -> JString s
+                | _ -> JNumber(v.ToString(Formatting.None))
+            | _ -> JString(token.ToString(Formatting.None))
 
     let ofObj (value: obj) =
         if isNull value then
             None
         else
-            let json = JsonSerializer.Serialize(value)
-            use document = JsonDocument.Parse(json)
-            Some(ofJsonElement document.RootElement)
+            let json = JsonConvert.SerializeObject(value, converter)
+            let token = JToken.Parse(json)
+            Some(ofJToken token)
 
     let ensureArrayPayload (argCount: int) (value: JsonValue) =
         if argCount <= 0 then
@@ -375,34 +395,41 @@ module private SchemaModel =
         Object(properties, None, false)
 
     and private buildUnionSchema options state t =
-        let cases =
-            FSharpType.GetUnionCases(t, true)
-            |> Array.toList
+        let unionCases = FSharpType.GetUnionCases(t, true) |> Array.toList
+        let noFieldCases, fieldCases =
+            unionCases |> List.partition (fun unionCase -> unionCase.GetFields().Length = 0)
+
+        let noFieldSchema =
+            noFieldCases
+            |> List.map (fun unionCase -> unionCase.Name)
+            |> function
+                | [] -> None
+                | names -> Some(Enum(names, false))
+
+        let fieldCaseSchemas =
+            fieldCases
             |> List.map (fun unionCase ->
                 let fields = unionCase.GetFields()
 
-                if fields.Length = 0 then
-                    Object([ "case", Enum([ unionCase.Name ], false), true ], None, false)
-                else
-                    let payloadProperties =
-                        fields
-                        |> Array.toList
-                        |> List.mapi (fun idx field ->
-                            let name =
-                                if String.IsNullOrWhiteSpace(field.Name) then
-                                    sprintf "item%d" (idx + 1)
-                                else
-                                    field.Name
+                let payloadSchema =
+                    if fields.Length = 1 then
+                        schemaFor options state fields.[0].PropertyType
+                    else
+                        let fieldSchema =
+                            fields
+                            |> Array.toList
+                            |> List.map (fun field -> schemaFor options state field.PropertyType)
+                            |> fun all -> OneOf(all, false)
 
-                            name, schemaFor options state field.PropertyType, true)
+                        Array(fieldSchema, false)
 
-                    let properties =
-                        ("case", Enum([ unionCase.Name ], false), true)
-                        :: payloadProperties
+                Object([ unionCase.Name, payloadSchema, true ], None, false))
 
-                    Object(properties, None, false))
-
-        OneOf(cases, false)
+        match noFieldSchema, fieldCaseSchemas with
+        | Some onlyNoField, [] -> onlyNoField
+        | None, [ single ] -> single
+        | None, many -> OneOf(many, false)
+        | Some noField, many -> OneOf(noField :: many, false)
 
     let generate options endpoints =
         let state = {

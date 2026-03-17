@@ -15,6 +15,14 @@ type IComplexApi = {
     search: SearchRequest -> Async<string list>
 }
 
+type ShippingStatus =
+    | Created
+    | Failed of reason: string
+
+type IDuApi = {
+    getStatus: unit -> Async<ShippingStatus>
+}
+
 let private routeBuilder typeName methodName = sprintf "/api/%s/%s" typeName methodName
 
 [<Fact>]
@@ -50,3 +58,40 @@ let ``Suave adapter can compose docs and remoting webparts`` () =
 
     combinedWebPart.Should().NotBeNull() |> ignore
     document.Routes.JsonPath.Should().Be("/openapi.json") |> ignore
+
+[<Fact>]
+let ``Adapters preserve DU schema wire-shape semantics`` () =
+    let options =
+        OpenApi.options
+        |> OpenApi.withTitle "Adapter DU parity"
+        |> OpenApi.withVersion "1.0.0"
+        |> OpenApi.withEndpointRouteStrategy (routeBuilder "IDuApi")
+
+    let document = OpenApi.generate<IDuApi> options
+
+    use parsed = JsonDocument.Parse(document.Json)
+    let oneOf =
+        parsed.RootElement
+            .GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty("ShippingStatus")
+            .GetProperty("oneOf")
+
+    let hasStringCase =
+        oneOf.EnumerateArray()
+        |> Seq.exists (fun schema ->
+            match schema.TryGetProperty("enum") with
+            | true, enumNode ->
+                enumNode.EnumerateArray()
+                |> Seq.exists (fun entry -> entry.GetString() = "Created")
+            | false, _ -> false)
+
+    let hasObjectCase =
+        oneOf.EnumerateArray()
+        |> Seq.exists (fun schema ->
+            match schema.TryGetProperty("properties") with
+            | true, props -> props.TryGetProperty("Failed") |> fst
+            | false, _ -> false)
+
+    hasStringCase.Should().BeTrue() |> ignore
+    hasObjectCase.Should().BeTrue() |> ignore

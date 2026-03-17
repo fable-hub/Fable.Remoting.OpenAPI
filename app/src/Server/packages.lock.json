@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dependencies": {
-    "net8.0": {
+    "net10.0": {
       "FSharp.Core": {
         "type": "Direct",
         "requested": "[8.0.403, )",
@@ -54,8 +54,7 @@
           "FSharp.Core": "6.0.0",
           "Giraffe.ViewEngine": "1.4.0",
           "Microsoft.IO.RecyclableMemoryStream": "3.0.0",
-          "Newtonsoft.Json": "13.0.3",
-          "System.Text.Json": "8.0.3"
+          "Newtonsoft.Json": "13.0.3"
         }
       },
       "Giraffe.ViewEngine": {
@@ -73,25 +72,6 @@
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "6.10.0"
         }
-      },
-      "Microsoft.AspNetCore.WebUtilities": {
-        "type": "Transitive",
-        "resolved": "2.3.0",
-        "contentHash": "trbXdWzoAEUVd0PE2yTopkz4kjZaAIA7xUWekd5uBw+7xE8Do/YOVTeb9d9koPTlbtZT539aESJjSLSqD8eYrQ==",
-        "dependencies": {
-          "Microsoft.Net.Http.Headers": "2.3.0",
-          "System.Text.Encodings.Web": "8.0.0"
-        }
-      },
-      "Microsoft.CSharp": {
-        "type": "Transitive",
-        "resolved": "4.5.0",
-        "contentHash": "kaj6Wb4qoMuH3HySFJhxwQfe8R/sJsNJnANrvv8WdFPMoNbKY5htfNscv+LHCu5ipz+49m2e+WQXpLXr9XYemQ=="
-      },
-      "Microsoft.Extensions.Primitives": {
-        "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "bXJEZrW9ny8vjMF1JV253WeLhpEVzFo1lyaZu1vQ4ZxWUlVvknZ/+ftFgVheLubb4eZPSwwxBeqS1JkCOjxd8g=="
       },
       "Microsoft.IdentityModel.JsonWebTokens": {
         "type": "Transitive",
@@ -129,24 +109,13 @@
         "resolved": "6.10.0",
         "contentHash": "qbf1NslutDB4oLrriYTJpy7oB1pbh2ej2lEHd2IPDQH9C74ysOdhU5wAC7KoXblldbo7YsNR2QYFOqQM/b0Rsg==",
         "dependencies": {
-          "Microsoft.CSharp": "4.5.0",
-          "Microsoft.IdentityModel.Logging": "6.10.0",
-          "System.Security.Cryptography.Cng": "4.5.0"
+          "Microsoft.IdentityModel.Logging": "6.10.0"
         }
       },
       "Microsoft.IO.RecyclableMemoryStream": {
         "type": "Transitive",
         "resolved": "3.0.0",
         "contentHash": "irv0HuqoH8Ig5i2fO+8dmDNdFdsrO+DoQcedwIlb810qpZHBNQHZLW7C/AHBQDgLLpw2T96vmMAy/aE4Yj55Sg=="
-      },
-      "Microsoft.Net.Http.Headers": {
-        "type": "Transitive",
-        "resolved": "2.3.0",
-        "contentHash": "/M0wVg6tJUOHutWD3BMOUVZAioJVXe0tCpFiovzv0T9T12TBf4MnaHP0efO8TCr1a6O9RZgQeZ9Gdark8L9XdA==",
-        "dependencies": {
-          "Microsoft.Extensions.Primitives": "8.0.0",
-          "System.Buffers": "4.6.0"
-        }
       },
       "Newtonsoft.Json": {
         "type": "Transitive",
@@ -171,11 +140,6 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "6.0.3"
         }
       },
-      "System.Buffers": {
-        "type": "Transitive",
-        "resolved": "4.6.0",
-        "contentHash": "lN6tZi7Q46zFzAbRYXTIvfXcyvQQgxnY7Xm6C6xQ9784dEL1amjM6S6Iw4ZpsvesAKnRVsM4scrDQaDqSClkjA=="
-      },
       "System.IdentityModel.Tokens.Jwt": {
         "type": "Transitive",
         "resolved": "6.10.0",
@@ -185,21 +149,10 @@
           "Microsoft.IdentityModel.Tokens": "6.10.0"
         }
       },
-      "System.Security.Cryptography.Cng": {
-        "type": "Transitive",
-        "resolved": "4.5.0",
-        "contentHash": "WG3r7EyjUe9CMPFSs6bty5doUqT+q9pbI80hlNzo2SkPkZ4VTuZkGWjpp77JB8+uaL4DFPRdBsAY+DX3dBK92A=="
-      },
-      "System.Text.Encodings.Web": {
-        "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "yev/k9GHAEGx2Rg3/tU6MQh4HGBXJs70y7j1LaM1i/ER9po+6nnQ6RRqTJn1E7Xu0fbIFK80Nh5EoODxrbxwBQ=="
-      },
       "fable.remoting.openapi": {
         "type": "Project",
         "dependencies": {
-          "Fable.Remoting.Server": "[5.23.0, )",
-          "System.Text.Json": "[8.0.5, )"
+          "Fable.Remoting.Server": "[5.23.0, )"
         }
       },
       "fable.remoting.openapi.giraffe": {
@@ -233,16 +186,8 @@
           "FSharp.Core": "6.0.0",
           "Fable.Remoting.Json": "2.25.0",
           "Fable.Remoting.MsgPack": "1.24.0",
-          "Microsoft.AspNetCore.WebUtilities": "2.3.0",
-          "Microsoft.IO.RecyclableMemoryStream": "[3.0.0, 4.0.0)",
-          "Microsoft.Net.Http.Headers": "2.3.0"
+          "Microsoft.IO.RecyclableMemoryStream": "[3.0.0, 4.0.0)"
         }
-      },
-      "System.Text.Json": {
-        "type": "CentralTransitive",
-        "requested": "[8.0.5, )",
-        "resolved": "8.0.5",
-        "contentHash": "0f1B50Ss7rqxXiaBJyzUu9bWFOO2/zSlifZ/UNMdiIpDYe4cY4LQQicP4nirK1OS31I43rn062UIJ1Q9bpmHpg=="
       }
     }
   }
